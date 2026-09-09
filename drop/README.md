@@ -17,3 +17,9 @@ ptsx ingest
 ```
 
 Package lands in `drop/out/`. On a licensed Mac with plugins this runs clean-cut; otherwise gate.
+
+To recreate the venv and `PTSX.app` on the Mac:
+
+```bash
+./scripts/rebuild-local.sh
+```

@@ -39,6 +39,18 @@ ptsx ingest --indir /path/to/TASKID
 
 You can also pass `--user`, `--assistant`, and `--outdir`. Ingest transcribes by default; `--no-transcribe` skips Whisper.
 
+### Rebuild on your Mac
+
+This cloud workspace is not the Mac. Recreate the install next to the files you will drop:
+
+```bash
+cd "$HOME/Pro Tools SX"
+chmod +x scripts/rebuild-local.sh
+./scripts/rebuild-local.sh
+```
+
+That checks out the ingest branch if `drop/` is missing, rebuilds `.venv` / Whisper / `PTSX.app`, and prints the absolute `drop/` path. Then copy `TASKID_USER.wav` and `TASKID_ASSISTANT.wav` into that folder (Finder or `cp`), not into chat.
+
 ### Enhance vs clean-cut vs gate
 
 Adobe Enhance is a heavy AI restore (noise, reverb, “studio mic” leveling). dxRevive at Mix 28% alone is **not** a replacement: clean-cut runs dxRevive as a light wet/dry mix, then Mouth De-click and Fresh Air, then -21.9 LUFS / -3.1 dBTP. That is production dialogue cleanup, not Enhance’s full rewrite of the voice.
