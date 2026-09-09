@@ -16,6 +16,16 @@ TRUE_PEAK_DB = -3.1
 DXREVIVE_VST3 = Path("/Library/Audio/Plug-Ins/VST3/Accentize-dxRevive.vst3")
 MOUTH_DECLICK_VST3 = Path("/Library/Audio/Plug-Ins/VST3/RX 12 Mouth De-click.vst3")
 FRESH_AIR_VST3 = Path("/Library/Audio/Plug-Ins/VST3/Slate Digital/Fresh Air.vst3")
+CLEANUP_PLUGIN_PATHS = (DXREVIVE_VST3, MOUTH_DECLICK_VST3, FRESH_AIR_VST3)
+
+
+def cleanup_plugins_present() -> bool:
+    """True when the three clean-cut VST3s are on disk (does not load them)."""
+    return all(p.exists() for p in CLEANUP_PLUGIN_PATHS)
+
+
+def missing_cleanup_plugins() -> list[Path]:
+    return [p for p in CLEANUP_PLUGIN_PATHS if not p.exists()]
 
 
 @dataclass
@@ -96,11 +106,7 @@ def load_cleanup_plugins(config: CleanupConfig | None = None) -> list:
             "  pip install pedalboard pyloudnorm"
         ) from exc
 
-    missing = [
-        p
-        for p in (DXREVIVE_VST3, MOUTH_DECLICK_VST3, FRESH_AIR_VST3)
-        if not p.exists()
-    ]
+    missing = missing_cleanup_plugins()
     if missing:
         raise SystemExit(
             "Cleanup plugins not found:\n" + "\n".join(f"  {p}" for p in missing)
