@@ -110,3 +110,124 @@ def test_uniqueness_digital_silence_is_high():
     a = uniqueness_db("assistant", 0.08, 5.40, peak_u, peak_a, hop)
     assert u > 20
     assert a < -20
+
+
+def test_long_floor_kept_when_other_talks_inside():
+    hop = 0.010
+    n = 1200
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_u[100:1000] = 0.20
+    peak_a[300:800] = 0.22
+    clips = [
+        ("user", 1.00, 10.00),
+        ("assistant", 3.00, 8.00),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert kept == [("user", 1.00, 10.00)]
+    assert any(c[0] == "assistant" for c in dropped)
+
+
+def test_padded_bleed_is_dropped_even_if_mean_is_close():
+    """Quiet pickup plus pad used to average under the old -6 dB bar and survive."""
+    hop = 0.010
+    n = 800
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_u[100:500] = 0.20
+    # Assistant clip is mostly pad; core is only ~4 dB down from the user.
+    peak_a[80:250] = 0.002
+    peak_a[100:180] = 0.13
+    clips = [
+        ("user", 1.00, 5.00),
+        ("assistant", 0.80, 2.50),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert kept == [("user", 1.00, 5.00)]
+    assert any(c[0] == "assistant" for c in dropped)
+
+
+def test_offset_bleed_after_other_stops_is_dropped():
+    hop = 0.010
+    n = 800
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_u[100:500] = 0.20
+    # User already silent; leftover on assistant is much quieter than that turn.
+    peak_a[505:580] = 0.04
+    clips = [
+        ("user", 1.00, 5.00),
+        ("assistant", 5.05, 5.80),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert kept == [("user", 1.00, 5.00)]
+    assert any(c[0] == "assistant" for c in dropped)
+
+
+def test_short_real_reply_at_similar_level_is_kept():
+    hop = 0.010
+    n = 900
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_u[100:500] = 0.20
+    peak_a[525:620] = 0.18
+    clips = [
+        ("user", 1.00, 5.00),
+        ("assistant", 5.25, 6.20),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert any(c[0] == "assistant" and abs(c[1] - 5.25) < 1e-6 for c in kept)
+    assert not any(c[0] == "assistant" for c in dropped)
+
+
+def test_edge_overlap_bleed_dropped_even_when_median_looks_unique():
+    """Bleed leftover: most frames are after the other mic stops, overlap is quieter."""
+    hop = 0.010
+    n = 900
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_u[100:500] = 0.20
+    peak_a[470:560] = 0.05
+    clips = [
+        ("user", 1.00, 5.00),
+        ("assistant", 4.70, 5.60),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert kept == [("user", 1.00, 5.00)]
+    assert any(c[0] == "assistant" for c in dropped)
+
+
+def test_leading_quiet_assistant_before_user_is_dropped():
+    hop = 0.010
+    n = 2500
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_a[50:150] = 0.08
+    peak_u[800:1500] = 0.20
+    peak_a[1600:2400] = 0.20
+    clips = [
+        ("assistant", 0.50, 1.50),
+        ("user", 8.00, 15.00),
+        ("assistant", 16.00, 24.00),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert not any(c[0] == "assistant" and c[2] < 8.0 for c in kept)
+    assert any(c[0] == "assistant" and c[1] >= 16.0 for c in kept)
+    assert any(c[0] == "assistant" and c[2] < 8.0 for c in dropped)
+
+
+def test_leading_full_level_assistant_before_user_is_kept():
+    hop = 0.010
+    n = 2500
+    peak_u = np.zeros(n, dtype=np.float32)
+    peak_a = np.zeros(n, dtype=np.float32)
+    peak_a[50:150] = 0.20
+    peak_u[800:1500] = 0.20
+    peak_a[1600:2400] = 0.20
+    clips = [
+        ("assistant", 0.50, 1.50),
+        ("user", 8.00, 15.00),
+        ("assistant", 16.00, 24.00),
+    ]
+    kept, dropped = assign_script_turns(clips, peak_u, peak_a, hop)
+    assert any(c[0] == "assistant" and abs(c[1] - 0.50) < 1e-6 for c in kept)

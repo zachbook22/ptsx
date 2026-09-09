@@ -124,7 +124,7 @@ A leftover “yeah” is a quick mute; a false cut is a restore from REMOVED or 
 - **Standard cut (`ptsx gate`):** speech peaks below -6 dBFS are boosted to -6; peaks above -3 dBFS are limited to -3. Silence is not raised.
 - **Clean-cut (`ptsx clean-cut`):** dxRevive 28%, RX 12 Mouth De-click 1.5%, Fresh Air 5%, then -21.9 LUFS / -3.1 dBTP; no -6/-3 window after that.
 - Strip silence per track at -28 dBFS with 250 ms pad; quiet word tails are held so endings are not chopped.
-- Build the conversation from unique-speaker turns. Nested yeahs/bleed are dropped; turns are not cut short.
+- Build the conversation from unique-speaker turns. Nested yeahs/bleed are dropped; turns are not cut short. A clip that is quieter than the other mic at the same time is treated as bleed. Short leftovers at a speaker change are dropped if they lose to the other mic on the overlapping frames (even when the leftover looks unique after that person stops). Quiet one-sided pickup before the other speaker’s first turn is dropped too.
 - Nudge remaining clips so speaker-change gaps sit 0.300–0.800 s apart. Source clip lengths stay intact.
 - 10 ms fade in/out on the pad, never on the dialogue itself.
 
