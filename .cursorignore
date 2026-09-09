@@ -1,0 +1,6 @@
+# Hour WAVs and ingest output stay on disk; do not pull them into chat context.
+*.wav
+drop/
+out/
+.venv/
+PTSX.app/

@@ -19,6 +19,16 @@ def test_find_pair(tmp_path: Path) -> None:
     assert assistant.name == "TASK12_ASSISTANT.wav"
 
 
+def test_resolve_ingest_indir_defaults_to_drop(tmp_path: Path) -> None:
+    from ptsx.ingest import resolve_ingest_indir
+
+    drop = tmp_path / "drop"
+    drop.mkdir()
+    assert resolve_ingest_indir(None, cwd=tmp_path) == drop
+    assert resolve_ingest_indir(Path("/share/TASK12"), cwd=tmp_path) == Path("/share/TASK12")
+    assert resolve_ingest_indir(None, user=Path("a.wav"), cwd=tmp_path) is None
+
+
 def test_choose_mode() -> None:
     assert choose_mode(already_enhanced=True, plugins_present=True) == "gate"
     assert choose_mode(already_enhanced=False, plugins_present=True) == "clean-cut"

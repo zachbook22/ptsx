@@ -238,7 +238,7 @@ def _add_ingest(sub: argparse._SubParsersAction) -> None:
         "--indir",
         type=Path,
         default=None,
-        help="Folder with TASKID_USER.wav and TASKID_ASSISTANT.wav",
+        help="Folder with TASKID_USER.wav and TASKID_ASSISTANT.wav (default: ./drop)",
     )
     p.add_argument("--user", type=Path, default=None)
     p.add_argument("--assistant", type=Path, default=None)
@@ -266,6 +266,7 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
         format_dispatcher_message,
         ingest_dir,
         ingest_pair,
+        resolve_ingest_indir,
     )
 
     kwargs = dict(
@@ -273,13 +274,15 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
         transcribe=not args.no_transcribe,
         whisper_model=args.whisper_model,
     )
-    if args.indir is not None:
-        paths = ingest_dir(args.indir, args.outdir, **kwargs)
-        dest = (args.outdir or (args.indir / "out")).resolve()
+    indir = resolve_ingest_indir(args.indir, user=args.user)
+    if indir is not None:
+        paths = ingest_dir(indir, args.outdir, **kwargs)
+        dest = (args.outdir or (indir / "out")).resolve()
     else:
         if args.user is None or args.assistant is None or args.outdir is None:
             raise SystemExit(
-                "ptsx ingest needs --indir, or --user and --assistant and --outdir"
+                "ptsx ingest needs files in ./drop, or --indir, "
+                "or --user and --assistant and --outdir"
             )
         dest = args.outdir
         paths = ingest_pair(args.user, args.assistant, dest, **kwargs)

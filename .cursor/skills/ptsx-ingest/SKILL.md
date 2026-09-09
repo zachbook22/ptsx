@@ -12,12 +12,21 @@ Hour-long dual-track conversations are SFT audio. Run **ingest once** on the lic
 
 ## Drop naming
 
+Copy the pair onto disk. Do not attach hour WAVs in chat (~10 MB cap).
+
 ```
-TASKID_USER.wav
-TASKID_ASSISTANT.wav
+drop/TASKID_USER.wav
+drop/TASKID_ASSISTANT.wav
 ```
 
-Mono, same sample rate. `ptsx ingest --indir /path/to/drop` writes to `drop/out/`.
+That `drop/` folder is the local inbox in this repo. `ptsx ingest` with no `--indir` uses it.
+
+```bash
+ptsx ingest
+./scripts/ingest-drop.sh
+```
+
+Or any other folder: `ptsx ingest --indir /path/to/drop` writes to `drop/out/`.
 
 ## Which chain
 

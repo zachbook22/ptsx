@@ -18,6 +18,7 @@ from ptsx.turns import TurnParams
 from ptsx.vad import VadParams
 
 WAV_SUFFIXES = {".wav", ".wave"}
+DEFAULT_DROP_DIRNAME = "drop"
 _ROLE_SUFFIXES = (
     ("_user", "user"),
     ("_speaker_a", "user"),
@@ -36,6 +37,28 @@ def _role_from_name(path: Path) -> str | None:
     for suffix, role in _ROLE_SUFFIXES:
         if stem.endswith(suffix):
             return role
+    return None
+
+
+def default_drop_dir(cwd: Path | None = None) -> Path:
+    """Repo-local inbox: copy hour WAVs here instead of attaching them in chat."""
+    return (cwd or Path.cwd()) / DEFAULT_DROP_DIRNAME
+
+
+def resolve_ingest_indir(
+    indir: Path | None,
+    *,
+    user: Path | None = None,
+    cwd: Path | None = None,
+) -> Path | None:
+    """Use --indir, else ./drop when it exists and no explicit --user."""
+    if indir is not None:
+        return Path(indir)
+    if user is not None:
+        return None
+    drop = default_drop_dir(cwd)
+    if drop.is_dir():
+        return drop
     return None
 
 

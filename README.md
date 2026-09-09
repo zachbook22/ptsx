@@ -13,14 +13,31 @@ Recorders drop two mono WAVs onto a dedicated Mac with this private ptsx install
 - `TASKID_USER.wav` / `TASKID_ASSISTANT.wav`
 - Mono, same sample rate. Clean-cut time-aligns if they were not started together.
 
-```bash
-source .venv/bin/activate
-ptsx ingest --indir /path/to/TASKID
-# already ran Adobe Enhance (legacy):
-ptsx ingest --indir /path/to/TASKID --already-enhanced
+Do **not** attach hour WAVs in Cursor or GrokBot chat (there is a ~10 MB cap). Copy them onto disk.
+
+**Local inbox in this repo:** put the pair in `drop/` (gitignored, not indexed):
+
+```
+drop/TASKID_USER.wav
+drop/TASKID_ASSISTANT.wav
 ```
 
-Default output folder is `<indir>/out`. You can also pass `--user`, `--assistant`, and `--outdir`. Ingest transcribes by default; `--no-transcribe` skips Whisper.
+```bash
+source .venv/bin/activate
+ptsx ingest
+# same as:
+./scripts/ingest-drop.sh
+# already ran Adobe Enhance (legacy):
+ptsx ingest --already-enhanced
+```
+
+Writes to `drop/out/`. Or point at any folder:
+
+```bash
+ptsx ingest --indir /path/to/TASKID
+```
+
+You can also pass `--user`, `--assistant`, and `--outdir`. Ingest transcribes by default; `--no-transcribe` skips Whisper.
 
 ### Enhance vs clean-cut vs gate
 
