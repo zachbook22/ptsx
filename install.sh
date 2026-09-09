@@ -135,6 +135,9 @@ echo "  source .venv/bin/activate"
 echo "  ptsx app"
 echo
 echo "CLI:"
+echo "  ./scripts/rebuild-local.sh   # Mac: venv + PTSX.app + drop/"
+echo "  ptsx ingest                  # uses ./drop (TASKID_USER.wav + TASKID_ASSISTANT.wav)"
+echo "  ./scripts/ingest-drop.sh"
 echo "  ptsx gate --user /path/to/USER.wav --assistant /path/to/ASSISTANT.wav --outdir ./out --transcribe"
 echo "  ptsx clean-cut --user /path/to/USER.wav --assistant /path/to/ASSISTANT.wav --outdir ./out --transcribe"
 echo

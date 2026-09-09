@@ -33,7 +33,8 @@ def test_silence_stays_silence():
 
 
 def test_plugin_paths_exist_or_skip():
-    from ptsx.cleanup import DXREVIVE_VST3, FRESH_AIR_VST3, MOUTH_DECLICK_VST3
+    from ptsx.cleanup import CLEANUP_PLUGIN_PATHS, cleanup_plugins_present
 
-    if not (DXREVIVE_VST3.exists() and MOUTH_DECLICK_VST3.exists() and FRESH_AIR_VST3.exists()):
+    if not cleanup_plugins_present():
         pytest.skip("cleanup VST3s are not installed")
+    assert all(p.exists() for p in CLEANUP_PLUGIN_PATHS)

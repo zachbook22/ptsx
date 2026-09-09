@@ -14,11 +14,13 @@ from ptsx.vad import VadParams
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="ptsx",
-        description="Gate two aligned speaker WAVs into exclusive turns.",
+        description="Gate two aligned speaker WAVs into exclusive turns. ptsx ingest is the SFT drop path.",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
     _add_gate(sub)
     _add_clean_cut(sub)
+    _add_ingest(sub)
+    _add_ingest_status(sub)
     _add_eval(sub)
     _add_script(sub)
     _add_app(sub)
@@ -27,6 +29,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_gate(args)
     if args.cmd == "clean-cut":
         return _cmd_clean_cut(args)
+    if args.cmd == "ingest":
+        return _cmd_ingest(args)
+    if args.cmd == "ingest-status":
+        return _cmd_ingest_status(args)
     if args.cmd == "script":
         return _cmd_script(args)
     if args.cmd == "app":
@@ -195,9 +201,99 @@ def _print_paths(outdir: Path, paths: dict[str, Path]) -> None:
         "clips",
         "script",
         "script_csv",
+        "editor",
+        "summary",
     ):
         if key in paths:
             print(f"  {key}: {paths[key]}")
+
+
+def _add_ingest_status(sub: argparse._SubParsersAction) -> None:
+    p = sub.add_parser(
+        "ingest-status",
+        help="Print the dispatcher chat message from ingest_summary.json (no audio render)",
+    )
+    p.add_argument(
+        "--outdir",
+        required=True,
+        type=Path,
+        help="Package folder that already contains ingest_summary.json",
+    )
+
+
+def _cmd_ingest_status(args: argparse.Namespace) -> int:
+    from ptsx.ingest import format_dispatcher_message, load_ingest_summary
+
+    summary = load_ingest_summary(args.outdir)
+    print(format_dispatcher_message(summary))
+    return 0
+
+
+def _add_ingest(sub: argparse._SubParsersAction) -> None:
+    p = sub.add_parser(
+        "ingest",
+        help="SFT drop: find USER/ASSISTANT WAVs, clean-cut if plugins else gate, write EDITOR.txt",
+    )
+    p.add_argument(
+        "--indir",
+        type=Path,
+        default=None,
+        help="Folder with TASKID_USER.wav and TASKID_ASSISTANT.wav (default: ./drop)",
+    )
+    p.add_argument("--user", type=Path, default=None)
+    p.add_argument("--assistant", type=Path, default=None)
+    p.add_argument(
+        "--outdir",
+        type=Path,
+        default=None,
+        help="Output folder (default: <indir>/out)",
+    )
+    p.add_argument(
+        "--already-enhanced",
+        action="store_true",
+        help="Files already went through Adobe Enhance: gate only, no -6/-3 window",
+    )
+    p.add_argument(
+        "--no-transcribe",
+        action="store_true",
+        help="Skip Whisper (script.txt will have times only)",
+    )
+    p.add_argument("--whisper-model", default="base")
+
+
+def _cmd_ingest(args: argparse.Namespace) -> int:
+    from ptsx.ingest import (
+        format_dispatcher_message,
+        ingest_dir,
+        ingest_pair,
+        resolve_ingest_indir,
+    )
+
+    kwargs = dict(
+        already_enhanced=args.already_enhanced,
+        transcribe=not args.no_transcribe,
+        whisper_model=args.whisper_model,
+    )
+    indir = resolve_ingest_indir(args.indir, user=args.user)
+    if indir is not None:
+        paths = ingest_dir(indir, args.outdir, **kwargs)
+        dest = (args.outdir or (indir / "out")).resolve()
+    else:
+        if args.user is None or args.assistant is None or args.outdir is None:
+            raise SystemExit(
+                "ptsx ingest needs files in ./drop, or --indir, "
+                "or --user and --assistant and --outdir"
+            )
+        dest = args.outdir
+        paths = ingest_pair(args.user, args.assistant, dest, **kwargs)
+    _print_paths(dest, paths)
+    summary_path = paths.get("summary")
+    if summary_path and summary_path.is_file():
+        import json
+
+        print()
+        print(format_dispatcher_message(json.loads(summary_path.read_text())))
+    return 0
 
 
 def _cmd_gate(args: argparse.Namespace) -> int:
